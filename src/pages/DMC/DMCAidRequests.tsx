@@ -1,11 +1,15 @@
 import React, { useEffect, useState } from "react";
 
 export default function DMCAidRequests() {
-  const [aidRequests, setAidRequests] = useState<any[]>([]);
-  const [selected, setSelected] = useState<any>(null);
+  const [dsApprovedPostDisasterOngoing, setDsApprovedPostDisasterOngoing] = useState<any[]>([]);
+  const [dsApprovedPostDisasterDelivered, setDsApprovedPostDisasterDelivered] = useState<any[]>([]);
+  const [emergencyAidsOngoing, setEmergencyAidsOngoing] = useState<any[]>([]);
+  const [emergencyAidsDelivered, setEmergencyAidsDelivered] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [aidType, setAidType] = useState<"postDisaster" | "emergency">("postDisaster");
 
-  useEffect(() => {
+  const fetchAids = () => {
+    setLoading(true);
     const dmcData = JSON.parse(localStorage.getItem("dmcOfficerData") || "{}");
     const district = dmcData?.district;
 
@@ -15,156 +19,205 @@ export default function DMCAidRequests() {
       return;
     }
 
-    fetch(`http://localhost:5158/AidRequest/byDistrict/${district}`)
-      .then((res) => res.json())
-      .then((data) => {
-        setAidRequests(data);
+    // Fetch both statuses for both aid types
+    Promise.all([
+      fetch(`http://localhost:5158/AidRequest/aids-for-district?district=${district}&isFulfilled=false`).then(res => res.json()),
+      fetch(`http://localhost:5158/AidRequest/aids-for-district?district=${district}&isFulfilled=true`).then(res => res.json())
+    ])
+      .then(([ongoingData, deliveredData]) => {
+        setDsApprovedPostDisasterOngoing(ongoingData.dsApprovedPostDisaster || []);
+        setEmergencyAidsOngoing(ongoingData.emergency || []);
+        setDsApprovedPostDisasterDelivered(deliveredData.dsApprovedPostDisaster || []);
+        setEmergencyAidsDelivered(deliveredData.emergency || []);
         setLoading(false);
       })
-      .catch((err) => {
+      .catch(err => {
         console.error("Failed to fetch aid requests:", err);
         setLoading(false);
       });
-  }, []);
-
-  const handleDecision = async (status: string) => {
-    if (!selected) return;
-
-    try {
-      const response = await fetch("http://localhost:5158/AidRequest/updateStatus", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          reportId: selected.aid_id,
-          status: status,
-          actor: "DMC",
-        }),
-      });
-
-      if (response.ok) {
-        alert(`Request ${status} successfully`);
-        setAidRequests((prev) =>
-          prev.filter((r) => r.aid_id !== selected.aid_id)
-        );
-        setSelected(null);
-      } else {
-        alert("Failed to update status.");
-      }
-    } catch (error) {
-      console.error("Decision error:", error);
-      alert("An error occurred.");
-    }
   };
 
+  useEffect(() => {
+    fetchAids();
+  }, [aidType]);
+
   return (
-    <div className="w-full max-w-5xl mx-auto bg-gray-100 rounded-2xl shadow p-8 mt-8">
-      <div className="flex justify-between items-center mb-6">
-        <h2 className="text-2xl font-bold">Aid Requests in Your District</h2>
-        <button className="bg-gray-200 rounded-full px-4 py-1 flex items-center gap-2">
-          <span className="material-icons text-base">filter_list</span>
-          Filter
+    <div className="w-full max-w-6xl mx-auto bg-gray-100 rounded-2xl shadow p-8 mt-8">
+      <h2 className="text-2xl font-bold mb-4">Aid Requests in Your District</h2>
+
+      {/* Aid type toggle */}
+      <div className="flex items-center mb-6">
+        <label className="mr-4 font-medium">Category:</label>
+        <button
+          className={`mr-2 px-4 py-2 rounded ${aidType === "postDisaster" ? "bg-blue-600 text-white" : "bg-gray-300 text-gray-800"}`}
+          onClick={() => setAidType("postDisaster")}
+        >
+          Post-Disaster
+        </button>
+        <button
+          className={`px-4 py-2 rounded ${aidType === "emergency" ? "bg-blue-600 text-white" : "bg-gray-300 text-gray-800"}`}
+          onClick={() => setAidType("emergency")}
+        >
+          Emergency
         </button>
       </div>
 
       {loading ? (
         <p className="text-center text-gray-600">Loading aid requests...</p>
-      ) : aidRequests.length === 0 ? (
-        <p className="text-center text-gray-600">
-          No aid requests found in your district.
-        </p>
       ) : (
-        <div className="overflow-x-auto">
-          <table className="min-w-full bg-white rounded-lg border">
-            <thead>
-              <tr className="bg-gray-200 text-gray-700">
-                <th className="py-2 px-4 border">Name</th>
-                <th className="py-2 px-4 border">Date</th>
-                <th className="py-2 px-4 border">Type</th>
-                <th className="py-2 px-4 border">Divisional Secretariat</th>
-                <th className="py-2 px-4 border">Action</th>
-              </tr>
-            </thead>
-            <tbody>
-              {aidRequests.map((req, idx) => (
-                <tr key={idx} className="border-b last:border-b-0">
-                  <td className="py-2 px-4 border">{req.full_name}</td>
-                  <td className="py-2 px-4 border">
-                    {new Date(req.date_time).toLocaleString()}
-                  </td>
-                  <td className="py-2 px-4 border">{req.type_support}</td>
-                  <td className="py-2 px-4 border">{req.divisional_secretariat}</td>
-                  <td className="py-2 px-4 border">
-                    <button
-                      className="underline text-blue-600"
-                      onClick={() => setSelected(req)}
-                    >
-                      Details
-                    </button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      )}
+        <>
+          {aidType === "postDisaster" && (
+            <>
+              {/* Ongoing Post-Disaster */}
+              <section className="mb-10">
+                <h3 className="text-xl font-semibold mb-2">Ongoing Post-Disaster Aid Requests</h3>
+                {dsApprovedPostDisasterOngoing.length === 0 ? (
+                  <p className="text-gray-600">No ongoing post-disaster aids.</p>
+                ) : (
+                  <div className="overflow-x-auto">
+                    <table className="min-w-full bg-white rounded-lg border">
+                      <thead>
+                        <tr className="bg-gray-200 text-gray-700">
+                          <th className="py-2 px-4 border">Name</th>
+                          <th className="py-2 px-4 border">Date</th>
+                          <th className="py-2 px-4 border">Time</th>
+                          <th className="py-2 px-4 border">Type</th>
+                          <th className="py-2 px-4 border">Divisional Secretariat</th>
+                          <th className="py-2 px-4 border">Contact No</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {dsApprovedPostDisasterOngoing.map((req, idx) => {
+                          const date = new Date(req.date_time);
+                          return (
+                            <tr key={idx} className="border-b last:border-b-0">
+                              <td className="py-2 px-4 border">{req.full_name}</td>
+                              <td className="py-2 px-4 border">{date.toLocaleDateString()}</td>
+                              <td className="py-2 px-4 border">{date.toLocaleTimeString()}</td>
+                              <td className="py-2 px-4 border">{req.type_support}</td>
+                              <td className="py-2 px-4 border">{req.divisional_secretariat}</td>
+                              <td className="py-2 px-4 border">{req.contact_no}</td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </section>
 
-      {/* Modal */}
-      {selected && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-30">
-          <div className="bg-gray-100 rounded-2xl shadow-xl p-8 max-w-xl w-full relative overflow-y-auto max-h-[90vh]">
-            <div className="bg-white border border-black rounded-xl p-6 shadow flex flex-col gap-2">
-              <div className="flex justify-between items-center">
-                <div>
-                  <span className="font-semibold">{selected.full_name}</span>{" "}
-                  <span className="font-normal">- {selected.type_support}</span>
-                </div>
-                <div className="text-sm text-gray-600">
-                  {new Date(selected.date_time).toLocaleString()}
-                </div>
-              </div>
-              <div className="text-sm mt-2 space-y-1">
-                <div>
-                  <span className="font-semibold">Divisional Secretariat:</span>{" "}
-                  {selected.divisional_secretariat}
-                </div>
-                <div>
-                  <span className="font-semibold">Contact No:</span>{" "}
-                  {selected.contact_no}
-                </div>
-                <div>
-                  <span className="font-semibold">Family Size:</span>{" "}
-                  {selected.family_size}
-                </div>
-                <div>
-                  <span className="font-semibold">Description:</span>{" "}
-                  {selected.description}
-                </div>
-              </div>
-              <div className="flex gap-3 mt-4 justify-end">
-                <button
-                  className="bg-green-600 text-white px-5 py-2 rounded"
-                  onClick={() => handleDecision("Approved")}
-                >
-                  Approve
-                </button>
-                <button
-                  className="bg-red-600 text-white px-5 py-2 rounded"
-                  onClick={() => handleDecision("Rejected")}
-                >
-                  Reject
-                </button>
-                <button
-                  className="border border-gray-600 px-5 py-2 rounded"
-                  onClick={() => setSelected(null)}
-                >
-                  Close
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
+              {/* Delivered Post-Disaster */}
+              <section>
+                <h3 className="text-xl font-semibold mb-2">Delivered Post-Disaster Aid Requests</h3>
+                {dsApprovedPostDisasterDelivered.length === 0 ? (
+                  <p className="text-gray-600">No delivered post-disaster aids.</p>
+                ) : (
+                  <div className="overflow-x-auto">
+                    <table className="min-w-full bg-white rounded-lg border">
+                      <thead>
+                        <tr className="bg-gray-200 text-gray-700">
+                          <th className="py-2 px-4 border">Name</th>
+                          <th className="py-2 px-4 border">Date</th>
+                          <th className="py-2 px-4 border">Time</th>
+                          <th className="py-2 px-4 border">Type</th>
+                          <th className="py-2 px-4 border">Divisional Secretariat</th>
+                          <th className="py-2 px-4 border">Contact No</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {dsApprovedPostDisasterDelivered.map((req, idx) => {
+                          const date = new Date(req.date_time);
+                          return (
+                            <tr key={idx} className="border-b last:border-b-0">
+                              <td className="py-2 px-4 border">{req.full_name}</td>
+                              <td className="py-2 px-4 border">{date.toLocaleDateString()}</td>
+                              <td className="py-2 px-4 border">{date.toLocaleTimeString()}</td>
+                              <td className="py-2 px-4 border">{req.type_support}</td>
+                              <td className="py-2 px-4 border">{req.divisional_secretariat}</td>
+                              <td className="py-2 px-4 border">{req.contact_no}</td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </section>
+            </>
+          )}
+
+          {aidType === "emergency" && (
+            <>
+              {/* Ongoing Emergency */}
+              <section className="mb-10">
+                <h3 className="text-xl font-semibold mb-2">Ongoing Emergency Aid Requests</h3>
+                {emergencyAidsOngoing.length === 0 ? (
+                  <p className="text-gray-600">No ongoing emergency aids.</p>
+                ) : (
+                  <div className="overflow-x-auto">
+                    <table className="min-w-full bg-white rounded-lg border">
+                      <thead>
+                        <tr className="bg-gray-200 text-gray-700">
+                          <th className="py-2 px-4 border">Date</th>
+                          <th className="py-2 px-4 border">Time</th>
+                          <th className="py-2 px-4 border">Divisional Secretariat</th>
+                          <th className="py-2 px-4 border">Contact No</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {emergencyAidsOngoing.map((req, idx) => {
+                          const date = new Date(req.date_time);
+                          return (
+                            <tr key={idx} className="border-b last:border-b-0">
+                              <td className="py-2 px-4 border">{date.toLocaleDateString()}</td>
+                              <td className="py-2 px-4 border">{date.toLocaleTimeString()}</td>
+                              <td className="py-2 px-4 border">{req.divisional_secretariat}</td>
+                              <td className="py-2 px-4 border">{req.contact_no}</td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </section>
+
+              {/* Delivered Emergency */}
+              <section>
+                <h3 className="text-xl font-semibold mb-2">Delivered Emergency Aid Requests</h3>
+                {emergencyAidsDelivered.length === 0 ? (
+                  <p className="text-gray-600">No delivered emergency aids.</p>
+                ) : (
+                  <div className="overflow-x-auto">
+                    <table className="min-w-full bg-white rounded-lg border">
+                      <thead>
+                        <tr className="bg-gray-200 text-gray-700">
+                          <th className="py-2 px-4 border">Date</th>
+                          <th className="py-2 px-4 border">Time</th>
+                          <th className="py-2 px-4 border">Divisional Secretariat</th>
+                          <th className="py-2 px-4 border">Contact No</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {emergencyAidsDelivered.map((req, idx) => {
+                          const date = new Date(req.date_time);
+                          return (
+                            <tr key={idx} className="border-b last:border-b-0">
+                              <td className="py-2 px-4 border">{date.toLocaleDateString()}</td>
+                              <td className="py-2 px-4 border">{date.toLocaleTimeString()}</td>
+                              <td className="py-2 px-4 border">{req.divisional_secretariat}</td>
+                              <td className="py-2 px-4 border">{req.contact_no}</td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </section>
+            </>
+          )}
+        </>
       )}
     </div>
   );
