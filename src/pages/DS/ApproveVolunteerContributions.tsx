@@ -5,21 +5,25 @@ interface VolunteerContribution {
   volunteer_id: number;
   volunteer_name: string;
   volunteer_contact: string;
-  type_support: string;
+  district: string;
+  volunteerTypeSupport: string;   // ✅ using this instead of type_support
   description: string;
   image: string;
   status: "Pending" | "Approved" | "Rejected";
+  requester_nic: string;
 }
 
 export default function ApproveVolunteerContributions() {
   const [contributions, setContributions] = useState<VolunteerContribution[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [removedMessage, setRemovedMessage] = useState<string>("");
+  const [requestTypeFilter, setRequestTypeFilter] = useState<"Emergency" | "PostDisaster">("Emergency");
 
   useEffect(() => {
     const fetchPending = async () => {
+      setIsLoading(true);
+
       try {
-        
         const dsDataString = localStorage.getItem("dsOfficerData");
         const dsData = dsDataString ? JSON.parse(dsDataString) : null;
         const divisional_secretariat = dsData?.divisionalSecretariat?.trim();
@@ -29,11 +33,10 @@ export default function ApproveVolunteerContributions() {
           return;
         }
 
-        // ✅ Fetch pending contributions filtered by division
         const res = await fetch(
           `http://localhost:5158/Contribution/pending?divisional_secretariat=${encodeURIComponent(
             divisional_secretariat
-          )}`
+          )}&aidCategory=${encodeURIComponent(requestTypeFilter)}`
         );
 
         if (!res.ok) throw new Error("Failed to fetch");
@@ -49,7 +52,7 @@ export default function ApproveVolunteerContributions() {
     };
 
     fetchPending();
-  }, []);
+  }, [requestTypeFilter]);
 
   const handleAction = async (
     contributionId: number,
@@ -62,14 +65,12 @@ export default function ApproveVolunteerContributions() {
       const res = await fetch(url, { method: "POST" });
       if (!res.ok) throw new Error(`Failed to ${action.toLowerCase()} contribution`);
 
-      // ✅ Update local state immediately
       setContributions((prev) =>
         prev.map((c) =>
           c.contribution_id === contributionId ? { ...c, status: action } : c
         )
       );
 
-      // ✅ Show feedback and remove after delay
       setTimeout(() => {
         setContributions((prev) =>
           prev.filter((c) => c.contribution_id !== contributionId)
@@ -88,6 +89,20 @@ export default function ApproveVolunteerContributions() {
       <h2 className="text-2xl font-bold text-center mb-4">
         Approve Volunteer Contributions
       </h2>
+
+      <div className="flex justify-center mb-6">
+        <label className="mr-4 font-semibold">Filter by Aid Request Type:</label>
+        <select
+          value={requestTypeFilter}
+          onChange={(e) =>
+            setRequestTypeFilter(e.target.value as "Emergency" | "PostDisaster")
+          }
+          className="rounded px-4 py-2 border border-gray-400"
+        >
+          <option value="Emergency">Emergency</option>
+          <option value="PostDisaster">Post Disaster</option>
+        </select>
+      </div>
 
       {isLoading ? (
         <p className="text-center text-gray-600">Loading contributions...</p>
@@ -114,16 +129,22 @@ export default function ApproveVolunteerContributions() {
                   </div>
                   <div>
                     <span className="font-semibold">Type of Support:</span>
-                    <span className="ml-2">{c.type_support}</span>
+                    <span className="ml-2">{c.volunteerTypeSupport}</span>
+                  </div>
+                  <div>
+                    <span className="font-semibold">Requester NIC:</span>
+                    <span className="ml-2">{c.requester_nic}</span>
                   </div>
                 </div>
-                <div>
-                  <img
-                    src={c.image}
-                    alt={c.type_support}
-                    className="w-24 h-24 object-cover rounded border"
-                  />
-                </div>
+                {c.image && (
+                  <div>
+                    <img
+                      src={c.image}
+                      alt={c.volunteerTypeSupport}
+                      className="w-24 h-24 object-cover rounded border"
+                    />
+                  </div>
+                )}
               </div>
               <div className="mt-2">
                 <span className="font-semibold">Description:</span>{" "}
