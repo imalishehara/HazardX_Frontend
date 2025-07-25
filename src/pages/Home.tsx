@@ -108,6 +108,7 @@ const handleTileClick = (target: string) => {
   const [showAlerts, setShowAlerts] = useState(true);
   const [showAidRequests, setShowAidRequests] = useState(true);
   const [showDeliveredAid, setShowDeliveredAid] = useState(true);
+  
 
   const [activeVolunteers, setActiveVolunteers] = useState(0);
   const [alertsSent, setAlertsSent] = useState(0);
@@ -140,6 +141,7 @@ const handleTileClick = (target: string) => {
       try {
         const res = await fetch("http://localhost:5158/AidRequest/ongoing");
         const data = await res.json();
+        console.log("Fetched ongoing aid requests:", data);
         setAidRequests(data);
       } catch (err) {
         console.error("Error fetching aid requests:", err);
@@ -211,26 +213,38 @@ const handleTileClick = (target: string) => {
     fetchDSContacts();
   }, []);
 
-  const aidTypes = Array.from(new Set(aidRequests.map(r => r.type_support || r.request_type).filter(Boolean)));
+  const aidTypes = Array.from(
+  new Set(
+    aidRequests
+      .map(r => r.type_support)
+      .filter(Boolean)
+  )
+);
+
+
   const districts = Object.keys(districtGnDivisions);
 
   const divisionalSecretariats = selectedDistrict
     ? districtGnDivisions[selectedDistrict] || []
     : Array.from(new Set(aidRequests.map(r => r.divisional_secretariat).filter(Boolean)));
 
-  const filtered = aidRequests.filter(req =>
-    (!selectedType || req.type_support === selectedType || req.request_type === selectedType) &&
-    (!selectedDistrict || req.district === selectedDistrict) &&
-    (!selectedDivisionalSecretariat || req.divisional_secretariat === selectedDivisionalSecretariat)
-  );
+  const filtered = aidRequests.filter(
+  req => req.request_type?.toLowerCase() === "postdisaster"
+);
 
-  const paginated = filtered.slice((page - 1) * rowsPerPage, page * rowsPerPage);
+const finalFiltered = filtered.filter(req =>
+  (!selectedType || req.type_support === selectedType) &&
+  (!selectedDistrict || req.district === selectedDistrict) &&
+  (!selectedDivisionalSecretariat || req.divisional_secretariat === selectedDivisionalSecretariat)
+);
 
-  useEffect(() => {
-    if (page > Math.ceil(filtered.length / rowsPerPage) && filtered.length > 0) {
-      setPage(1);
-    }
-  }, [filtered, page]);
+const paginated = finalFiltered.slice((page - 1) * rowsPerPage, page * rowsPerPage);
+
+useEffect(() => {
+  if (page > Math.ceil(finalFiltered.length / rowsPerPage) && finalFiltered.length > 0) {
+    setPage(1);
+  }
+}, [finalFiltered, page]);
 
   const resetFilters = useCallback(() => {
     setSelectedType(null);
@@ -372,10 +386,11 @@ const handleTileClick = (target: string) => {
 
         <div className="w-full h-[600px] rounded-xl overflow-hidden shadow-lg">
           <DisasterMap
-            approvedAidRequests={showAidRequests ? filtered : []}
+            approvedAidRequests={showAidRequests ? aidRequests : []} // ✅ all ongoing aids for the map!
             deliveredAidRequests={showDeliveredAid ? deliveredAidRequests : []}
             approvedAlerts={showAlerts ? alerts : []}
-          />
+            />
+
         </div>
       </section>
 
