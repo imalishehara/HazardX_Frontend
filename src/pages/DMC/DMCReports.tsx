@@ -280,6 +280,7 @@ export default function DMCReports() {
             <h3 className="text-2xl font-bold mb-4 text-center">Detailed Report</h3>
             <div className="mb-2"><b>Report ID:</b> {selected.report_id}</div>
             <div className="mb-2"><b>Name:</b> {selected.reporter_name}</div>
+            <div className="mb-2"><b>NIC Number:</b> {selected.nic_number || "N/A"}</div>
             <div className="mb-2"><b>Contact No:</b> {selected.contact_no}</div>
             <div className="mb-2"><b>Description:</b> {selected.description}</div>
             <div className="mb-2"><b>Date / Time:</b> {new Date(selected.date_time).toLocaleString()}</div>
