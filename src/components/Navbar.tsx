@@ -23,9 +23,9 @@ const Navbar = () => {
 
   const navLinks = [
     { path: "/", label: "Home" },
-    { path: "/alerts", label: "Alerts" },
-    { path: "/submit-symptoms", label: "Submit Symptoms" },
-    { path: "/request-aid", label: "Request Aid" },
+    { path: "/alerts", label: "View Disasters" },
+    { path: "/submit-symptoms", label: "Report Disasters" },
+    { path: "/request-aid", label: "Request Support" },
   ];
 
   const linkClass = ({ isActive }: { isActive: boolean }) =>
