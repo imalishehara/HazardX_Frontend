@@ -1,4 +1,5 @@
 import React, { useRef, useState, useEffect, useCallback } from "react";
+import { useNavigate } from "react-router-dom";
 import districtGnDivisions from "../data/districtDivisionalSecretariats";
 import DisasterMap from "../components/DisasterMap";
 
@@ -82,10 +83,27 @@ interface AidRequest {
   contact_no?: string;
 }
 
+interface DSOfficer {
+  divisional_secretariat: string;
+  contact_no: string;
+}
+
 export default function Home() {
+ const navigate = useNavigate();
+const aidTableRef = useRef<HTMLDivElement>(null);
+
+const handleTileClick = (target: string) => {
+  if (target === "#aid-table") {
+    aidTableRef.current?.scrollIntoView({ behavior: "smooth" });
+  } else {
+    navigate(target);
+  }
+};
+
   const [aidRequests, setAidRequests] = useState<AidRequest[]>([]);
   const [deliveredAidRequests, setDeliveredAidRequests] = useState<AidRequest[]>([]);
   const [alerts, setAlerts] = useState<Alert[]>([]);
+  const [dsContacts, setDsContacts] = useState<Record<string, string>>({});
 
   const [showAlerts, setShowAlerts] = useState(true);
   const [showAidRequests, setShowAidRequests] = useState(true);
@@ -121,7 +139,6 @@ export default function Home() {
     const fetchAidRequests = async () => {
       try {
         const res = await fetch("http://localhost:5158/AidRequest/ongoing");
-        if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
         const data = await res.json();
         setAidRequests(data);
       } catch (err) {
@@ -135,7 +152,6 @@ export default function Home() {
     const fetchDeliveredAidRequests = async () => {
       try {
         const res = await fetch("http://localhost:5158/AidRequest/delivered");
-        if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
         const data = await res.json();
         setDeliveredAidRequests(data);
       } catch (err) {
@@ -149,7 +165,6 @@ export default function Home() {
     const fetchAlerts = async () => {
       try {
         const res = await fetch("http://localhost:5158/Alerts/all");
-        if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
         const data = await res.json();
         const savedDistrict = localStorage.getItem("selectedDistrict");
         setAlerts(savedDistrict ? data.filter((a: Alert) => a.district === savedDistrict) : data);
@@ -168,7 +183,6 @@ export default function Home() {
           fetch("http://localhost:5158/alerts-sent-count"),
           fetch("http://localhost:5158/total-aid-requests-count"),
         ]);
-        if (!vol.ok || !alerts.ok || !aid.ok) throw new Error("Failed to fetch statistics");
         setActiveVolunteers((await vol.json()).count);
         setAlertsSent((await alerts.json()).count);
         setAidDelivered((await aid.json()).count);
@@ -179,6 +193,24 @@ export default function Home() {
     fetchStats();
   }, []);
 
+  useEffect(() => {
+    const fetchDSContacts = async () => {
+      try {
+        const res = await fetch("http://localhost:5158/DSOfficer/all");
+        const data: DSOfficer[] = await res.json();
+        const mapping: Record<string, string> = {};
+        data.forEach(ds => {
+          const normalizedKey = ds.divisional_secretariat.trim().toLowerCase();
+          mapping[normalizedKey] = ds.contact_no;
+        });
+        setDsContacts(mapping);
+      } catch (err) {
+        console.error("Error fetching DS officer contacts:", err);
+      }
+    };
+    fetchDSContacts();
+  }, []);
+
   const aidTypes = Array.from(new Set(aidRequests.map(r => r.type_support || r.request_type).filter(Boolean)));
   const districts = Object.keys(districtGnDivisions);
 
@@ -186,13 +218,11 @@ export default function Home() {
     ? districtGnDivisions[selectedDistrict] || []
     : Array.from(new Set(aidRequests.map(r => r.divisional_secretariat).filter(Boolean)));
 
-  const filtered = aidRequests.filter(req => {
-    return (
-      (!selectedType || req.type_support === selectedType || req.request_type === selectedType) &&
-      (!selectedDistrict || req.district === selectedDistrict) &&
-      (!selectedDivisionalSecretariat || req.divisional_secretariat === selectedDivisionalSecretariat)
-    );
-  });
+  const filtered = aidRequests.filter(req =>
+    (!selectedType || req.type_support === selectedType || req.request_type === selectedType) &&
+    (!selectedDistrict || req.district === selectedDistrict) &&
+    (!selectedDivisionalSecretariat || req.divisional_secretariat === selectedDivisionalSecretariat)
+  );
 
   const paginated = filtered.slice((page - 1) * rowsPerPage, page * rowsPerPage);
 
@@ -218,7 +248,7 @@ export default function Home() {
           <div className="flex flex-col md:flex-row items-center gap-12">
             <div className="flex-1 space-y-8">
               <h1 className="text-5xl md:text-7xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-purple-600">
-                Disaster Tracking & Management System
+                Disaster Management System
               </h1>
               <p className="text-xl md:text-2xl text-gray-600">
                 Empowering communities with real-time alerts, rapid response, and coordinated aid distribution.
@@ -241,23 +271,70 @@ export default function Home() {
           </div>
         </div>
       </section>
+             <section ref={aboutRef} className="max-w-5xl mx-auto mb-16 scroll-mt-28 px-4">
+  <div className="bg-white rounded-2xl shadow-lg p-8 md:p-12 mt-4">
+    <h2 className="text-3xl md:text-4xl font-bold text-blue-900 mb-4">
+      About the HazardX System
+    </h2>
+    <p className="text-lg text-gray-700 mb-8">
+      Our system helps communities prepare for, respond to, and recover from disasters efficiently.
+    </p>
 
-      {/* About */}
-      <section ref={aboutRef} className="max-w-4xl mx-auto mb-16 scroll-mt-28">
-        <div className="bg-white rounded-2xl shadow-lg p-8 md:p-12 mt-4">
-          <h2 className="text-3xl md:text-4xl font-bold text-blue-900 mb-4">About the HazardX System</h2>
-          <p className="text-lg text-gray-700 mb-4">
-            Our system helps communities prepare for, respond to, and recover from disasters efficiently.
-          </p>
-          <ul className="list-disc pl-6 text-gray-700 space-y-2">
-            <li>Instant alerts for your area</li>
-            <li>Report symptoms & request aid</li>
-            <li>Track approved aid</li>
-            <li>Access preparedness resources</li>
-            <li>Connect with volunteers & officials</li>
-          </ul>
+    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
+      {[
+        {
+          title: "Report Disasters",
+          desc: "Easily report disasters for quick response.",
+          path: "/submit-symptoms",
+        },
+        {
+          title: "View Disaster",
+          desc: "Access real-time disaster information with an interactive map.",
+          path: "/alerts",
+        },
+        {
+          title: "Request Support",
+          desc: "Ask for emergency support and post emergency period aids.",
+          path: "/request-aid",
+        },
+      ].map((item) => (
+        <div
+          key={item.title}
+          onClick={() => handleTileClick(item.path)}
+          className="flex flex-col items-center justify-center bg-blue-50 text-center rounded-xl p-6 shadow hover:shadow-md transition transform hover:-translate-y-1 w-full cursor-pointer"
+        >
+          <h3 className="text-lg font-semibold text-blue-800 mb-2">{item.title}</h3>
+          <p className="text-gray-600 text-sm">{item.desc}</p>
         </div>
-      </section>
+      ))}
+
+      {/* Second row: wrap last 2 tiles */}
+      <div className="md:col-span-3 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 gap-6 justify-center">
+        {[
+          {
+            title: "Donors Donation",
+            desc: "Donate to support disaster relief efforts.",
+            path: "#aid-table",
+          },
+          {
+            title: "Volunteers",
+            desc: "Join as a volunteer to help affected communities.",
+            path: "/signup",
+          },
+        ].map((item) => (
+          <div
+            key={item.title}
+            onClick={() => handleTileClick(item.path)}
+            className="flex flex-col items-center justify-center bg-blue-50 text-center rounded-xl p-6 shadow hover:shadow-md transition transform hover:-translate-y-1 w-full cursor-pointer"
+          >
+            <h3 className="text-lg font-semibold text-blue-800 mb-2">{item.title}</h3>
+            <p className="text-gray-600 text-sm">{item.desc}</p>
+          </div>
+        ))}
+      </div>
+    </div>
+  </div>
+</section>
 
         {/* Map */}
       <section className="w-full mb-16 max-w-7xl mx-auto px-4">
@@ -319,73 +396,119 @@ export default function Home() {
         </div>
       </section>
 
-     {/* Aid Table*/ }
-<section className="w-full mt-12">
-  <div className="bg-white rounded-2xl shadow-lg p-8 md:p-12">
-    <h2 className="text-2xl md:text-3xl font-bold mb-6 text-blue-800">Recent Aid Requests</h2>
-    <div className="mb-6 bg-blue-50 rounded-xl p-4 flex flex-wrap gap-4 items-center">
-      <span className="font-semibold text-gray-700">Filter by:</span>
-      <select className="px-3 py-2 rounded-lg border" value={selectedType || ""} onChange={e => {
-        setSelectedType(e.target.value || null);
-        setPage(1);
-      }}>
-        <option value="">Request Type</option>
-        {aidTypes.map(t => <option key={t} value={t}>{t}</option>)}
-      </select>
-      <select className="px-3 py-2 rounded-lg border" value={selectedDistrict || ""} onChange={e => {
-        setSelectedDistrict(e.target.value || null);
-        setSelectedDivisionalSecretariat(null);
-        setPage(1);
-      }}>
-        <option value="">District</option>
-        {districts.map(d => <option key={d} value={d}>{d}</option>)}
-      </select>
-      <select className="px-3 py-2 rounded-lg border" value={selectedDivisionalSecretariat || ""} onChange={e => {
-        setSelectedDivisionalSecretariat(e.target.value || null);
-        setPage(1);
-      }}>
-        <option value="">Divisional Secretariat</option>
-        {divisionalSecretariats.map(ds => <option key={ds} value={ds}>{ds}</option>)}
-      </select>
-      <button onClick={resetFilters} className="px-4 py-2 bg-gray-200 rounded-lg font-semibold hover:bg-gray-300">
-        Reset
-      </button>
-    </div>
+   {/* Aid Table */}
+      <section ref={aidTableRef} className="w-full mt-12">
+        <div className="bg-white rounded-2xl shadow-lg p-8 md:p-12">
+          <h2 className="text-2xl md:text-3xl font-bold mb-2 text-blue-800">
+            Post Emergency Period Aid Requests
+          </h2>
+          <p className="text-gray-700 mb-6">
+            If you like to donate, contact the Divisional Secretariat office of the affected area to get instructions on the donation process.
+          </p>
 
-    <div className="w-full overflow-x-auto">
-      <table className="min-w-[900px] w-full divide-y divide-gray-200 rounded-xl overflow-hidden shadow">
-        <thead className="bg-gradient-to-r from-blue-600 to-purple-600">
-          <tr>
-            {["#", "Recipient Name", "Request Type", "District", "Divisional Secretariat", "Contact No"].map(header => (
-              <th key={header} className="px-6 py-3 text-left text-xs font-bold text-white uppercase tracking-wider">
-                {header}
-              </th>
-            ))}
-          </tr>
-        </thead>
-        <tbody className="bg-white divide-y divide-gray-100">
-          {paginated.length === 0 ? (
-            <tr><td colSpan={6} className="px-6 py-8 text-center text-gray-400">No aid requests found.</td></tr>
-          ) : paginated.map((req, idx) => (
+          {/* Filter */}
+          <div className="mb-6 bg-blue-50 rounded-xl p-4 flex flex-wrap gap-4 items-center">
+            <span className="font-semibold text-gray-700">Filter by:</span>
+            <select
+              className="px-3 py-2 rounded-lg border"
+              value={selectedType || ""}
+              onChange={e => {
+                setSelectedType(e.target.value || null);
+                setPage(1);
+              }}
+            >
+              <option value="">Request Type</option>
+              {aidTypes.map(t => (
+                <option key={t} value={t}>{t}</option>
+              ))}
+            </select>
+            <select
+              className="px-3 py-2 rounded-lg border"
+              value={selectedDistrict || ""}
+              onChange={e => {
+                setSelectedDistrict(e.target.value || null);
+                setSelectedDivisionalSecretariat(null);
+                setPage(1);
+              }}
+            >
+              <option value="">District</option>
+              {districts.map(d => (
+                <option key={d} value={d}>{d}</option>
+              ))}
+            </select>
+            <select
+              className="px-3 py-2 rounded-lg border"
+              value={selectedDivisionalSecretariat || ""}
+              onChange={e => {
+                setSelectedDivisionalSecretariat(e.target.value || null);
+                setPage(1);
+              }}
+            >
+              <option value="">Divisional Secretariat</option>
+              {divisionalSecretariats.map(ds => (
+                <option key={ds} value={ds}>{ds}</option>
+              ))}
+            </select>
+            <button
+              onClick={resetFilters}
+              className="px-4 py-2 bg-gray-200 rounded-lg font-semibold hover:bg-gray-300"
+            >
+              Reset
+            </button>
+          </div>
+
+         {/* Table */}
+<div className="w-full overflow-x-auto">
+  <table className="min-w-[1000px] w-full divide-y divide-gray-200 rounded-xl overflow-hidden shadow">
+    <thead className="bg-gradient-to-r from-blue-600 to-purple-600">
+      <tr>
+        {["#", "Recipient Name", "Request Type", "District", "Divisional Secretariat", "Divisional Secretariat Contact"].map(header => (
+          <th key={header} className="px-6 py-3 text-left text-xs font-bold text-white uppercase tracking-wider">
+            {header}
+          </th>
+        ))}
+      </tr>
+    </thead>
+    <tbody className="bg-white divide-y divide-gray-100">
+      {paginated.length === 0 ? (
+        <tr>
+          <td colSpan={6} className="px-6 py-8 text-center text-gray-400">
+            No aid requests found.
+          </td>
+        </tr>
+      ) : (
+        paginated.map((req, idx) => {
+          const normalizedKey = req.divisional_secretariat.trim().toLowerCase();
+          const dsContact = dsContacts[normalizedKey] || "N/A";
+
+          return (
             <tr key={req.aid_id}>
               <td className="px-6 py-4">{(page - 1) * rowsPerPage + idx + 1}</td>
               <td className="px-6 py-4 font-semibold text-blue-700">{req.full_name}</td>
               <td className="px-6 py-4">{req.type_support || req.request_type}</td>
               <td className="px-6 py-4">{req.district}</td>
               <td className="px-6 py-4">{req.divisional_secretariat}</td>
-              <td className="px-6 py-4">{req.contact_no || "N/A"}</td>
+              <td className="px-6 py-4">{dsContact}</td>
             </tr>
-          ))}
-        </tbody>
-      </table>
-    </div>
+          );
+        })
+      )}
+    </tbody>
+  </table>
+</div>
+
+
 
     <div className="px-6 py-4 bg-gray-50 border-t">
       <div className="flex justify-center space-x-1">
         {Array.from({ length: Math.ceil(filtered.length / rowsPerPage) }, (_, i) => (
           <button
             key={i}
-            className={`px-4 py-2 border text-sm rounded-md ${page === i + 1 ? "bg-blue-600 text-white" : "bg-white border-gray-300 text-gray-500 hover:bg-gray-50"}`}
+            className={`px-4 py-2 border text-sm rounded-md ${
+              page === i + 1
+                ? "bg-blue-600 text-white"
+                : "bg-white border-gray-300 text-gray-500 hover:bg-gray-50"
+            }`}
             onClick={() => setPage(i + 1)}
           >
             {i + 1}
