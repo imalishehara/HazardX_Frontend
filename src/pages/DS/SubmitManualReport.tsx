@@ -165,7 +165,7 @@ export default function SubmitManualReport() {
   return (
     <div className="w-full max-w-3xl mx-auto bg-gray-100 rounded-2xl shadow p-8 mt-8">
       <h2 className="text-2xl font-bold text-center mb-6">
-        Submit Manual Reports
+        Report Disaster Alerts
       </h2>
       <form onSubmit={handleSubmit}>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
