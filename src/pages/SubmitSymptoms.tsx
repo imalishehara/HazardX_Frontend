@@ -12,6 +12,7 @@ export default function SubmitSymptoms() {
 
   const [reporter_name, setFullName] = useState("");
   const [contact_no, setContactNo] = useState("");
+  const [nic_number, setNicNumber] = useState("");
   const [district, setSelectedDistrict] = useState<string>("");
   const [divisional_secretariat, setSelectedDivisionalSecretariat] = useState<string>("");
   const [date_time, setDateTime] = useState("");
@@ -147,6 +148,7 @@ export default function SubmitSymptoms() {
     setImage("");
     setPreviewUrl("");
     setFullName("");
+    setNicNumber("");
     setContactNo("");
     setSelectedDistrict("");
     setSelectedDivisionalSecretariat("");
@@ -165,6 +167,7 @@ export default function SubmitSymptoms() {
 
     const reportData = {
       reporter_name,
+      nic_number,
       contact_no,
       district,
       divisional_secretariat,
@@ -240,7 +243,24 @@ export default function SubmitSymptoms() {
               </div>
             </div>
 
+            
             <div className="border-t border-gray-200" />
+
+{/* NIC Number */}
+<div className="flex flex-col gap-1 md:flex-row md:items-center">
+  <label className="block font-semibold text-base md:text-lg mb-1 md:w-44">NIC Number</label>
+  <div className="w-full flex flex-col">
+    <input
+      type="text"
+      required
+      placeholder="Enter NIC number"
+      value={nic_number}
+      onChange={(e) => setNicNumber(e.target.value)}
+      className="w-full bg-gray-100 rounded-lg h-10 px-4 text-base md:text-lg focus:outline-none md:ml-2 border border-gray-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition"
+    />
+  </div>
+</div>
+<div className="border-t border-gray-200" />
 
             {/* Contact No */}
             <div className="flex flex-col gap-1 md:flex-row md:items-center">
