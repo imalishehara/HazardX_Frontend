@@ -3,6 +3,7 @@ import React, { useEffect, useState } from "react";
 interface OngoingAidRequest {
   aid_id: number;
   full_name: string;
+  nic_number: string;
   contact_no: string;
   type_support: string;
   description: string;
@@ -116,6 +117,7 @@ const OngoingAidRequests: React.FC = () => {
               <thead>
                 <tr className="bg-blue-100">
                   <th className="py-2 px-4 border">Full Name</th>
+                  <th className="py-2 px-4 border">NIC Number</th>
                   <th className="py-2 px-4 border">Contact No</th>
                   <th className="py-2 px-4 border">Type of Support</th>
                   <th className="py-2 px-4 border">Description</th>
@@ -127,6 +129,7 @@ const OngoingAidRequests: React.FC = () => {
                 {requests.map((req, idx) => (
                   <tr key={req.aid_id} className="hover:bg-blue-50">
                     <td className="py-2 px-4 border">{req.full_name}</td>
+                     <td className="py-2 px-4 border">{req.nic_number}</td>
                     <td className="py-2 px-4 border">{req.contact_no}</td>
                     <td className="py-2 px-4 border">{req.type_support}</td>
                     <td className="py-2 px-4 border">{req.description}</td>
