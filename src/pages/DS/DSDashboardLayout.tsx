@@ -34,7 +34,6 @@ export default function DSDashboardLayout() {
     localStorage.removeItem("userId");
     navigate("/login");
   };
-  
 
   return (
     <div className="min-h-screen flex flex-col md:flex-row font-sans bg-gradient-to-br from-blue-50 via-white to-purple-50">
@@ -43,7 +42,13 @@ export default function DSDashboardLayout() {
         onClick={() => setSidebarOpen(true)}
         aria-label="Open sidebar"
       >
-        <svg className="w-7 h-7 text-gray-700" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+        <svg
+          className="w-7 h-7 text-gray-700"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2"
+          viewBox="0 0 24 24"
+        >
           <path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 12h16M4 18h16" />
         </svg>
       </button>
@@ -67,43 +72,106 @@ export default function DSDashboardLayout() {
             onClick={() => setSidebarOpen(false)}
             aria-label="Close sidebar"
           >
-            <svg className="w-6 h-6 text-gray-700" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+            <svg
+              className="w-6 h-6 text-gray-700"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              viewBox="0 0 24 24"
+            >
               <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
             </svg>
           </button>
         </div>
 
         <div className="text-4xl font-extrabold mb-8 text-left select-none">
-          <span className="bg-gradient-to-r from-blue-600 to-purple-500 bg-clip-text text-transparent">Hazard</span>
-          <span className="bg-gradient-to-r from-pink-500 to-purple-500 bg-clip-text text-transparent">X</span>
+          <span className="bg-gradient-to-r from-blue-600 to-purple-500 bg-clip-text text-transparent">
+            Hazard
+          </span>
+          <span className="bg-gradient-to-r from-pink-500 to-purple-500 bg-clip-text text-transparent">
+            X
+          </span>
         </div>
 
         <div className="flex flex-col items-center mb-8">
           <div className="w-24 h-24 bg-gradient-to-br from-blue-100 to-purple-100 rounded-full mb-4 border-4 border-white shadow" />
-          <div className="text-base font-semibold mb-1">Role: <span className="text-purple-600">DS Officer</span></div>
+          <div className="text-base font-semibold mb-1">
+            Role: <span className="text-purple-600">DS Officer</span>
+          </div>
           <div className="text-sm mb-1">User ID: {dsOfficer.user_id}</div>
           <div className="text-sm mb-1">Name: {dsOfficer.name}</div>
-          <div className="text-sm mb-1">Division: {dsOfficer.divisionalSecretariat}</div>
+          <div className="text-sm mb-1">
+            Division: {dsOfficer.divisionalSecretariat}
+          </div>
         </div>
 
         <hr className="border-gray-200 mb-4" />
         <nav className="flex flex-col gap-3 items-start mt-4 w-full">
-          <NavLink to="/ds-dashboard" end className={({ isActive }) =>
-            (isActive
-              ? "bg-gradient-to-r from-blue-500 to-purple-500 text-white"
-              : "bg-white text-gray-900 hover:bg-blue-100") +
-            " rounded-full py-2 px-6 font-semibold shadow transition text-left w-full"}>Dashboard</NavLink>
-          <NavLink to="/ds-dashboard/submit-manual-reports" className="bg-white py-2 px-6 rounded-full text-left w-full hover:bg-blue-100">Submit Manual Reports</NavLink>
-          <NavLink to="/ds-dashboard/ongoing-aid-requests" className="bg-white py-2 px-6 rounded-full text-left w-full hover:bg-blue-100">Ongoing Aid Requests</NavLink>
-          <NavLink to="/ds-dashboard/resolved-alerts" className="bg-white py-2 px-6 rounded-full text-left w-full hover:bg-blue-100">Resolved Alerts</NavLink>
-          <NavLink to="/ds-dashboard/approve-aid-requests" className="bg-white py-2 px-6 rounded-full text-left w-full hover:bg-blue-100">Approve Aid Requests</NavLink>
-          <NavLink to="/ds-dashboard/approve-volunteer-contributions" className="bg-white py-2 px-6 rounded-full text-left w-full hover:bg-blue-100">Approve Volunteer Contributions</NavLink>
-          <NavLink to="/ds-dashboard/volunteers" className="bg-white py-2 px-6 rounded-full text-left w-full hover:bg-blue-100">Volunteers</NavLink>
+          <NavLink
+            to="/ds-dashboard"
+            end
+            className={({ isActive }) =>
+              (isActive
+                ? "bg-gradient-to-r from-blue-500 to-purple-500 text-white"
+                : "bg-white text-gray-900 hover:bg-blue-100") +
+              " rounded-full py-2 px-6 font-semibold shadow transition text-left w-full"
+            }
+          >
+            Dashboard
+          </NavLink>
+
+          {/* Resolved Alerts moved up here */}
+          <NavLink
+            to="/ds-dashboard/resolved-alerts"
+            className="bg-white py-2 px-6 rounded-full text-left w-full hover:bg-blue-100"
+          >
+            Resolved Alerts
+          </NavLink>
+
+          <NavLink
+            to="/ds-dashboard/submit-manual-reports"
+            className="bg-white py-2 px-6 rounded-full text-left w-full hover:bg-blue-100"
+          >
+            Submit Manual Reports
+          </NavLink>
+
+          <NavLink
+            to="/ds-dashboard/ongoing-aid-requests"
+            className="bg-white py-2 px-6 rounded-full text-left w-full hover:bg-blue-100"
+          >
+            Ongoing Aid Requests
+          </NavLink>
+
+          <NavLink
+            to="/ds-dashboard/approve-aid-requests"
+            className="bg-white py-2 px-6 rounded-full text-left w-full hover:bg-blue-100"
+          >
+            Approve Aid Requests
+          </NavLink>
+
+          <NavLink
+            to="/ds-dashboard/approve-volunteer-contributions"
+            className="bg-white py-2 px-6 rounded-full text-left w-full hover:bg-blue-100"
+          >
+            Approve Volunteer Contributions
+          </NavLink>
+
+          <NavLink
+            to="/ds-dashboard/volunteers"
+            className="bg-white py-2 px-6 rounded-full text-left w-full hover:bg-blue-100"
+          >
+            Volunteers
+          </NavLink>
         </nav>
 
         <hr className="border-gray-200 my-4" />
         <nav className="flex flex-col gap-2 items-start w-full">
-          <NavLink to="/gn-dashboard/settings" className="bg-white py-2 px-6 rounded-full text-left w-full hover:bg-blue-100">System Settings</NavLink>
+          <NavLink
+            to="/gn-dashboard/settings"
+            className="bg-white py-2 px-6 rounded-full text-left w-full hover:bg-blue-100"
+          >
+            System Settings
+          </NavLink>
           <button
             className="text-left py-2 px-6 bg-white hover:bg-blue-100 rounded-full transition w-full font-semibold mt-2"
             onClick={handleLogout}
