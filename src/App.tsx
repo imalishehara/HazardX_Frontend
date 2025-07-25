@@ -121,6 +121,7 @@ import DMCReports from "./pages/DMC/DMCReports";
 import DMCAidRequests from "./pages/DMC/DMCAidRequests";
 import DMCVolunteers from "./pages/DMC/DMCVolunteers";
 import { UserProvider } from "./context/UserContext";
+import PostDisasterAidRequestTable from "./pages/volunteer/PostDisasterAidRequestTable";
 
 function AppContent() {
   const location = useLocation();
@@ -149,7 +150,7 @@ function AppContent() {
           <Route path="add-contribution" element={<AddContribution />} />
           <Route path="aid-requests" element={<AidRequests />} />
           <Route path="emergency-aid-request" element={<EmergencyAidRequest />} />
-          <Route path="post-disaster-aid-request" element={<PostDisasterAidRequest />} />
+          <Route path="post-disaster-aid-request" element={<PostDisasterAidRequestTable />} />
           <Route path="settings" element={<SystemSettings />} />
         </Route>
         {/* General DS dashboard routes */}
