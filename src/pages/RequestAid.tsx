@@ -8,6 +8,7 @@ export default function RequestAid() {
   const [formData, setFormData] = useState({
     full_name: "",
     contact_no: "",
+    nic_number: "",
     family_size: 1,
     date_time: "",
     description: "",
@@ -164,6 +165,7 @@ export default function RequestAid() {
     setFormData({
       full_name: "",
       contact_no: "",
+      nic_number: "",
       family_size: 1,
       date_time: "",
       description: "",
@@ -218,7 +220,7 @@ export default function RequestAid() {
       }
 
       setShowSuccess(true);
-      setFormData({ full_name: "", contact_no: "", family_size: 1, date_time: "", description: "",district: "",divisional_secretariat: "",
+      setFormData({ full_name: "", nic_number:"" ,contact_no: "", family_size: 1, date_time: "", description: "",district: "",divisional_secretariat: "",
         type_support: "",latitude: null, longitude: null });
       setSelectedDistrict("");
       setSelectedDivisionalSecretariat("");
@@ -621,6 +623,20 @@ export default function RequestAid() {
                 className="w-full bg-gray-100 rounded-lg h-10 px-4 text-base md:text-lg focus:outline-none md:ml-2 border border-gray-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition"
               />
             </div>
+
+            {/* ✅ New NIC Number */}
+             <div className="border-t border-gray-200" />
+            <div className="flex flex-col gap-1 md:flex-row md:items-center">
+           <label className="block font-semibold text-base md:text-lg mb-1 md:w-44">NIC Number</label>
+            <input
+            type="text"
+            required
+            placeholder="Enter your NIC number"
+            value={formData.nic_number}
+            onChange={e => setFormData({ ...formData, nic_number: e.target.value })}
+            className="w-full bg-gray-100 rounded-lg h-10 px-4 text-base md:text-lg focus:outline-none md:ml-2 border border-gray-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition"
+    />
+  </div>
 
             {/* Contact No with Validation */}
             <div className="border-t border-gray-200" />
