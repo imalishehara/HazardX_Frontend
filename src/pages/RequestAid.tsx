@@ -299,7 +299,7 @@ export default function RequestAid() {
                       </svg>
                     </div>
                     <div className="flex-1">
-                      <h3 className="text-xl font-bold text-red-700 mb-2">Emergency Aid Request</h3>
+                      <h3 className="text-xl font-bold text-red-700 mb-2">Emergency Support Request</h3>
                       <p className="text-gray-600">Quick emergency aid request with GPS location detection and contact information only</p>
                       <div className="mt-2 flex items-center space-x-4 text-sm text-red-600">
                         <span className="flex items-center">
@@ -331,7 +331,7 @@ export default function RequestAid() {
                       </svg>
                     </div>
                     <div className="flex-1">
-                      <h3 className="text-xl font-bold text-blue-700 mb-2">Regular Aid Request</h3>
+                      <h3 className="text-xl font-bold text-blue-700 mb-2">Post Emergency Period Aids</h3>
                       <p className="text-gray-600">Complete aid request form with detailed information about your needs and situation</p>
                       <div className="mt-2 flex items-center space-x-4 text-sm text-blue-600">
                         <span className="flex items-center">
@@ -424,7 +424,7 @@ export default function RequestAid() {
                   <label className="block font-semibold text-base md:text-lg mb-1 md:w-44">Full Name</label>
                   <input
                     type="text"
-                    required
+                    
                     placeholder="Enter your full name"
                     value={formData.full_name}
                     onChange={e => setFormData({ ...formData, full_name: e.target.value })}
