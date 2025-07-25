@@ -7,6 +7,7 @@ type AidRequest = {
   district: string;
   divisional_secretariat: string;
   contact_no: string;
+  nic_number: string;
   description: string;
   family_size: number;
   date_time: string;
@@ -25,11 +26,7 @@ export default function ApproveAidRequests() {
     }
 
     const dsOfficerData = JSON.parse(raw);
-    console.log("dsOfficerData from localStorage:", raw);
-
     const divisionalSecretariat = dsOfficerData?.divisionalSecretariat?.trim();
-    console.log("Parsed dsOfficerData:", dsOfficerData);
-    console.log("Divisional Secretariat used for filtering:", divisionalSecretariat);
 
     if (!divisionalSecretariat) {
       alert("DS Division missing.");
@@ -37,10 +34,10 @@ export default function ApproveAidRequests() {
     }
 
     fetch(
-  `http://localhost:5158/AidRequest/pending-post-disaster?divisionalSecretariat=${encodeURIComponent(
-    divisionalSecretariat
-  )}`
-)
+      `http://localhost:5158/AidRequest/pending-post-disaster?divisionalSecretariat=${encodeURIComponent(
+        divisionalSecretariat
+      )}`
+    )
       .then((res) => res.json())
       .then((data) => {
         setRequests(data);
@@ -114,28 +111,31 @@ export default function ApproveAidRequests() {
                   <span className="font-normal"> - {req.type_support}</span>
                 </div>
                 <div className="text-sm text-gray-600">
-                  Date requested:{" "}
-                  {new Date(req.date_time).toLocaleDateString()}
+                  Date requested: {new Date(req.date_time).toLocaleDateString()}
                 </div>
               </div>
-              <div className="flex flex-wrap gap-4 text-sm">
-                <div>
-                  <span className="font-semibold">Division:</span>{" "}
-                  {req.divisional_secretariat}
-                </div>
+
+              {/* ✅ Second row with wider spacing */}
+              <div className="flex flex-wrap gap-x-20 gap-y-2 text-sm">
                 <div>
                   <span className="font-semibold">Contact No:</span>{" "}
                   {req.contact_no}
+                </div>
+                <div>
+                  <span className="font-semibold">NIC Number:</span>{" "}
+                  {req.nic_number}
                 </div>
                 <div>
                   <span className="font-semibold">Family Size:</span>{" "}
                   {req.family_size}
                 </div>
               </div>
+
               <div>
                 <span className="font-semibold">Description:</span>{" "}
                 {req.description}
               </div>
+
               <div className="flex gap-4 mt-2">
                 <button
                   className="border border-black rounded px-6 py-2 font-semibold"
@@ -171,6 +171,9 @@ export default function ApproveAidRequests() {
               <b>Name:</b> {selected.full_name}
             </div>
             <div className="mb-2">
+              <b>NIC Number:</b> {selected.nic_number}
+            </div>
+            <div className="mb-2">
               <b>Type of Support:</b> {selected.type_support}
             </div>
             <div className="mb-2">
@@ -192,6 +195,7 @@ export default function ApproveAidRequests() {
             <div className="mb-4">
               <b>Description:</b> {selected.description}
             </div>
+
             <div className="flex gap-4 justify-center mt-6">
               <button
                 className="bg-black text-white rounded-full px-8 py-2 font-semibold"
