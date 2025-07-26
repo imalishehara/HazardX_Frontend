@@ -6,7 +6,7 @@ interface VolunteerContribution {
   volunteer_name: string;
   volunteer_contact: string;
   district: string;
-  volunteerTypeSupport: string;   // ✅ using this instead of type_support
+  volunteerTypeSupport: string; // ✅ using this instead of type_support
   description: string;
   image: string;
   status: "Pending" | "Approved" | "Rejected";
@@ -22,7 +22,6 @@ export default function ApproveVolunteerContributions() {
   useEffect(() => {
     const fetchPending = async () => {
       setIsLoading(true);
-
       try {
         const dsDataString = localStorage.getItem("dsOfficerData");
         const dsData = dsDataString ? JSON.parse(dsDataString) : null;
@@ -131,10 +130,14 @@ export default function ApproveVolunteerContributions() {
                     <span className="font-semibold">Type of Support:</span>
                     <span className="ml-2">{c.volunteerTypeSupport}</span>
                   </div>
-                  <div>
-                    <span className="font-semibold">Requester NIC:</span>
-                    <span className="ml-2">{c.requester_nic}</span>
-                  </div>
+
+                  {/* ✅ Only show NIC if PostDisaster */}
+                  {requestTypeFilter === "PostDisaster" && (
+                    <div>
+                      <span className="font-semibold">Requester NIC:</span>
+                      <span className="ml-2">{c.requester_nic}</span>
+                    </div>
+                  )}
                 </div>
                 {c.image && (
                   <div>
