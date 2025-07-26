@@ -477,8 +477,18 @@ useEffect(() => {
   <table className="min-w-[1000px] w-full divide-y divide-gray-200 rounded-xl overflow-hidden shadow">
     <thead className="bg-gradient-to-r from-blue-600 to-purple-600">
       <tr>
-        {["#", "Recipient Name", "Request Type", "District", "Divisional Secretariat", "Divisional Secretariat Contact"].map(header => (
-          <th key={header} className="px-6 py-3 text-left text-xs font-bold text-white uppercase tracking-wider">
+        {[
+          "#",
+          "Recipient Name",
+          "Requester Contact",
+          "Request Type",
+          "District",
+          "Divisional Secretariat with Contact"
+        ].map((header) => (
+          <th
+            key={header}
+            className="px-6 py-3 text-left text-xs font-bold text-white uppercase tracking-wider"
+          >
             {header}
           </th>
         ))}
@@ -495,15 +505,24 @@ useEffect(() => {
         paginated.map((req, idx) => {
           const normalizedKey = req.divisional_secretariat.trim().toLowerCase();
           const dsContact = dsContacts[normalizedKey] || "N/A";
+          const combinedDS = `${req.divisional_secretariat} - ${dsContact}`;
 
           return (
             <tr key={req.aid_id}>
-              <td className="px-6 py-4">{(page - 1) * rowsPerPage + idx + 1}</td>
-              <td className="px-6 py-4 font-semibold text-blue-700">{req.full_name}</td>
-              <td className="px-6 py-4">{req.type_support || req.request_type}</td>
+              <td className="px-6 py-4">
+                {(page - 1) * rowsPerPage + idx + 1}
+              </td>
+              <td className="px-6 py-4 font-semibold text-blue-700">
+                {req.full_name}
+              </td>
+              <td className="px-6 py-4">
+                {req.contact_no || "N/A"}
+              </td>
+              <td className="px-6 py-4">
+                {req.type_support || req.request_type}
+              </td>
               <td className="px-6 py-4">{req.district}</td>
-              <td className="px-6 py-4">{req.divisional_secretariat}</td>
-              <td className="px-6 py-4">{dsContact}</td>
+              <td className="px-6 py-4">{combinedDS}</td>
             </tr>
           );
         })
