@@ -1,5 +1,6 @@
 import React, { useRef, useState, useEffect } from "react";
 import districtDivisionalSecretariats from "../data/districtDivisionalSecretariats";
+import { getDivisionalSecretariatCoordinates, getDistrictCoordinates } from "../data/coordinates";
 
 const supportOptions = ["First aid", "Supply distribution", "Other"];
 
@@ -183,55 +184,6 @@ export default function RequestAid() {
 
   // Emergency Aid submission
   const handleEmergencySubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-
-    const phoneError = validatePhoneNumber(formData.contact_no);
-    if (phoneError) {
-      setErrors({ ...errors, contact_no: phoneError });
-      return;
-    }
-
-    const emergencyPayload = {
-      full_name: formData.full_name,
-      contact_no: formData.contact_no,
-      district: selectedDistrict,
-      divisional_secretariat: selectedDivisionalSecretariat,
-      family_size: 1,
-      date_time: new Date().toISOString(),
-      description: "Emergency aid request - GPS location detected",
-      type_support: "Emergency Aid",
-      request_type: "Emergency",
-      latitude: formData.latitude,    
-      longitude: formData.longitude,
-    };
-
-    try {
-      const res = await fetch("http://localhost:5158/AidRequest/create", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify(emergencyPayload)
-      });
-
-      if (!res.ok) {
-        const errorData = await res.json().catch(() => ({ message: "Unknown server error" }));
-        throw new Error(errorData.message || `Server error: ${res.status}`);
-      }
-
-      setShowSuccess(true);
-      setFormData({ full_name: "", nic_number:"" ,contact_no: "", family_size: 1, date_time: "", description: "",district: "",divisional_secretariat: "",
-        type_support: "",latitude: null, longitude: null });
-      setSelectedDistrict("");
-      setSelectedDivisionalSecretariat("");
-      setIsLocationAutoDetected(false);
-    } catch (err: any) {
-      console.error("Emergency submission failed:", err);
-      alert("Failed to submit emergency aid request: " + err.message);
-    }
-  };
-
-  const handleSubmit = async (e: React.FormEvent) => {
   e.preventDefault();
 
   const phoneError = validatePhoneNumber(formData.contact_no);
@@ -240,12 +192,38 @@ export default function RequestAid() {
     return;
   }
 
-  const requestPayload = {
-    ...formData,
+  // Fallback for coordinates if not auto-detected
+  let lat = formData.latitude;
+  let lng = formData.longitude;
+
+  if (!lat || !lng) {
+    const dsCoords = getDivisionalSecretariatCoordinates(selectedDivisionalSecretariat);
+    const districtCoords = getDistrictCoordinates(selectedDistrict);
+
+    if (dsCoords) {
+      lat = dsCoords.lat;
+      lng = dsCoords.lng;
+    } else if (districtCoords) {
+      lat = districtCoords.lat;
+      lng = districtCoords.lng;
+    } else {
+      alert("Could not find coordinates for the selected district/DS.");
+      return;
+    }
+  }
+
+  const emergencyPayload = {
+    full_name: formData.full_name,
+    contact_no: formData.contact_no,
     district: selectedDistrict,
     divisional_secretariat: selectedDivisionalSecretariat,
-    type_support: typeOfSupport === "Other" ? customSupport : typeOfSupport,
-    request_type: "postDisaster" 
+    family_size: 1,
+    date_time: new Date().toISOString(),
+    description: "Emergency aid request - GPS location detected",
+    type_support: "Emergency Aid",
+    request_type: "Emergency",
+    latitude: lat,
+    longitude: lng,
   };
 
   try {
@@ -254,7 +232,84 @@ export default function RequestAid() {
       headers: {
         "Content-Type": "application/json"
       },
-      body: JSON.stringify(requestPayload)
+      body: JSON.stringify(emergencyPayload)
+    });
+
+    if (!res.ok) {
+      const errorData = await res.json().catch(() => ({ message: "Unknown server error" }));
+      throw new Error(errorData.message || `Server error: ${res.status}`);
+    }
+
+    setShowSuccess(true);
+    setFormData({
+      full_name: "",
+      nic_number: "",
+      contact_no: "",
+      family_size: 1,
+      date_time: "",
+      description: "",
+      district: "",
+      divisional_secretariat: "",
+      type_support: "",
+      latitude: null,
+      longitude: null,
+    });
+    setSelectedDistrict("");
+    setSelectedDivisionalSecretariat("");
+    setIsLocationAutoDetected(false);
+  } catch (err: any) {
+    console.error("Emergency submission failed:", err);
+    alert("Failed to submit emergency aid request: " + err.message);
+  }
+};
+
+
+ const handleSubmit = async (e: React.FormEvent) => {
+  e.preventDefault();
+
+  const phoneError = validatePhoneNumber(formData.contact_no);
+  if (phoneError) {
+    setErrors({ ...errors, contact_no: phoneError });
+    return;
+  }
+
+  // Get coordinates fallback
+  let lat = formData.latitude;
+  let lng = formData.longitude;
+
+  if (!lat || !lng) {
+    const dsCoords = getDivisionalSecretariatCoordinates(selectedDivisionalSecretariat);
+    const districtCoords = getDistrictCoordinates(selectedDistrict);
+
+    if (dsCoords) {
+      lat = dsCoords.lat;
+      lng = dsCoords.lng;
+    } else if (districtCoords) {
+      lat = districtCoords.lat;
+      lng = districtCoords.lng;
+    } else {
+      alert("Could not find coordinates for the selected district/DS.");
+      return;
+    }
+  }
+
+  const requestPayload = {
+    ...formData,
+    district: selectedDistrict,
+    divisional_secretariat: selectedDivisionalSecretariat,
+    type_support: typeOfSupport === "Other" ? customSupport : typeOfSupport,
+    request_type: "postDisaster",
+    latitude: lat,
+    longitude: lng,
+  };
+
+  try {
+    const res = await fetch("http://localhost:5158/AidRequest/create", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(requestPayload),
     });
 
     if (!res.ok) {
@@ -277,6 +332,7 @@ export default function RequestAid() {
     alert("Failed to submit aid request: " + err.message);
   }
 };
+
 
 
   return (
