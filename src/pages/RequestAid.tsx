@@ -1,6 +1,6 @@
 import React, { useRef, useState, useEffect } from "react";
 import districtDivisionalSecretariats from "../data/districtDivisionalSecretariats";
-import { getDivisionalSecretariatCoordinates, getDistrictCoordinates } from "../data/coordinates";
+import { getDivisionalSecretariatCoordinates, getDistrictCoordinates, districtCoordinates, divisionalSecretariatCoordinates } from "../data/coordinates";
 
 const supportOptions = ["First aid", "Supply distribution", "Other"];
 
@@ -45,52 +45,46 @@ export default function RequestAid() {
     return "";
   };
 
-  // GPS Location Service - Maps coordinates to districts/divisional secretariats
+  // GPS Location Service - Maps coordinates to districts/divisional secretariats using closest match from coordinates.ts
   const getLocationFromCoordinates = (latitude: number, longitude: number): { district: string; divisionalSecretariat: string } => {
-    // Sri Lanka coordinate bounds and district mapping
-    // This is a simplified mapping - in a real application, you'd use a proper geocoding service
-    const locationMappings = [
-      { bounds: { minLat: 6.7, maxLat: 7.0, minLng: 79.8, maxLng: 80.2 }, district: "Colombo", divisionalSecretariat: "Colombo" },
-      { bounds: { minLat: 6.9, maxLat: 7.2, minLng: 79.9, maxLng: 80.3 }, district: "Gampaha", divisionalSecretariat: "Gampaha" },
-      { bounds: { minLat: 6.5, maxLat: 6.8, minLng: 79.8, maxLng: 80.2 }, district: "Kalutara", divisionalSecretariat: "Kalutara" },
-      { bounds: { minLat: 7.2, maxLat: 7.4, minLng: 80.5, maxLng: 80.8 }, district: "Kandy", divisionalSecretariat: "Kandy" },
-      { bounds: { minLat: 7.4, maxLat: 7.6, minLng: 80.5, maxLng: 80.8 }, district: "Matale", divisionalSecretariat: "Matale" },
-      { bounds: { minLat: 6.9, maxLat: 7.1, minLng: 80.7, maxLng: 81.0 }, district: "Nuwara Eliya", divisionalSecretariat: "Nuwara Eliya" },
-      { bounds: { minLat: 6.0, maxLat: 6.3, minLng: 80.1, maxLng: 80.4 }, district: "Galle", divisionalSecretariat: "Galle" },
-      { bounds: { minLat: 5.9, maxLat: 6.2, minLng: 80.5, maxLng: 80.8 }, district: "Matara", divisionalSecretariat: "Matara" },
-      { bounds: { minLat: 6.1, maxLat: 6.4, minLng: 81.0, maxLng: 81.3 }, district: "Hambantota", divisionalSecretariat: "Hambantota" },
-      { bounds: { minLat: 9.5, maxLat: 9.8, minLng: 80.0, maxLng: 80.3 }, district: "Jaffna", divisionalSecretariat: "Jaffna" },
-      { bounds: { minLat: 9.3, maxLat: 9.6, minLng: 80.3, maxLng: 80.6 }, district: "Kilinochchi", divisionalSecretariat: "Kilinochchi" },
-      { bounds: { minLat: 8.9, maxLat: 9.2, minLng: 79.9, maxLng: 80.2 }, district: "Mannar", divisionalSecretariat: "Mannar" },
-      { bounds: { minLat: 8.7, maxLat: 9.0, minLng: 80.4, maxLng: 80.7 }, district: "Vavuniya", divisionalSecretariat: "Vavuniya" },
-      { bounds: { minLat: 9.0, maxLat: 9.3, minLng: 80.7, maxLng: 81.0 }, district: "Mullaitivu", divisionalSecretariat: "Mullaitivu" },
-      { bounds: { minLat: 7.7, maxLat: 8.0, minLng: 81.6, maxLng: 81.9 }, district: "Batticaloa", divisionalSecretariat: "Batticaloa" },
-      { bounds: { minLat: 7.2, maxLat: 7.5, minLng: 81.6, maxLng: 81.9 }, district: "Ampara", divisionalSecretariat: "Ampara" },
-      { bounds: { minLat: 8.5, maxLat: 8.8, minLng: 81.1, maxLng: 81.4 }, district: "Trincomalee", divisionalSecretariat: "Trincomalee" },
-      { bounds: { minLat: 7.4, maxLat: 7.7, minLng: 80.3, maxLng: 80.6 }, district: "Kurunegala", divisionalSecretariat: "Kurunegala" },
-      { bounds: { minLat: 8.0, maxLat: 8.3, minLng: 79.8, maxLng: 80.1 }, district: "Puttalam", divisionalSecretariat: "Puttalam" },
-      { bounds: { minLat: 8.3, maxLat: 8.6, minLng: 80.3, maxLng: 80.6 }, district: "Anuradhapura", divisionalSecretariat: "Anuradhapura East" },
-      { bounds: { minLat: 7.9, maxLat: 8.2, minLng: 80.9, maxLng: 81.2 }, district: "Polonnaruwa", divisionalSecretariat: "Polonnaruwa" },
-      { bounds: { minLat: 6.9, maxLat: 7.2, minLng: 81.0, maxLng: 81.3 }, district: "Badulla", divisionalSecretariat: "Badulla" },
-      { bounds: { minLat: 6.8, maxLat: 7.1, minLng: 81.3, maxLng: 81.6 }, district: "Monaragala", divisionalSecretariat: "Monaragala" },
-      { bounds: { minLat: 6.6, maxLat: 6.9, minLng: 80.3, maxLng: 80.6 }, district: "Ratnapura", divisionalSecretariat: "Ratnapura" },
-      { bounds: { minLat: 7.2, maxLat: 7.5, minLng: 80.3, maxLng: 80.6 }, district: "Kegalle", divisionalSecretariat: "Kegalle" }
-    ];
+    function getDistance(lat1: number, lng1: number, lat2: number, lng2: number) {
+      return Math.sqrt(Math.pow(lat1 - lat2, 2) + Math.pow(lng1 - lng2, 2));
+    }
 
-    for (const mapping of locationMappings) {
-      const { bounds, district, divisionalSecretariat } = mapping;
-      if (
-        latitude >= bounds.minLat &&
-        latitude <= bounds.maxLat &&
-        longitude >= bounds.minLng &&
-        longitude <= bounds.maxLng
-      ) {
-        return { district, divisionalSecretariat };
+    let closestDS: string | undefined = undefined;
+    let minDSDist = Infinity;
+    let closestDistrict: string | undefined = undefined;
+    let minDistrictDist = Infinity;
+
+    for (const [dsName, coords] of Object.entries(divisionalSecretariatCoordinates)) {
+      const dist = getDistance(latitude, longitude, coords.lat, coords.lng);
+      if (dist < minDSDist) {
+        minDSDist = dist;
+        closestDS = dsName;
       }
     }
 
-    // Default fallback if no mapping found
-    return { district: "Colombo", divisionalSecretariat: "Colombo" };
+    for (const [districtName, coords] of Object.entries(districtCoordinates)) {
+      const dist = getDistance(latitude, longitude, coords.lat, coords.lng);
+      if (dist < minDistrictDist) {
+        minDistrictDist = dist;
+        closestDistrict = districtName;
+      }
+    }
+
+    let finalDistrict = closestDistrict;
+    if (closestDS && closestDistrict && districtDivisionalSecretariats[closestDistrict]?.includes(closestDS)) {
+      finalDistrict = closestDistrict;
+    } else if (closestDS) {
+      for (const [districtName, dsList] of Object.entries(districtDivisionalSecretariats)) {
+        if (dsList.includes(closestDS)) {
+          finalDistrict = districtName;
+          break;
+        }
+      }
+    }
+
+    return { district: finalDistrict || "Colombo", divisionalSecretariat: closestDS || "Colombo" };
   };
 
   const getCurrentLocation = () => {
