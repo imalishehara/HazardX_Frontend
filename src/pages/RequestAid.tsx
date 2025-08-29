@@ -139,17 +139,16 @@ export default function RequestAid() {
   };
 
   // Automatically get GPS location when emergency option is selected
-  useEffect(() => {
-    if (selectedOption === 'emergency') {
-      // Clear any previous location data and errors
-      setSelectedDistrict("");
-      setSelectedDivisionalSecretariat("");
-      setLocationError("");
-      setIsLocationAutoDetected(false);
-      // Automatically trigger GPS location detection
-      getCurrentLocation();
-    }
-  }, [selectedOption]);
+  // Auto-fill current local date/time for emergency requests
+useEffect(() => {
+  if (selectedOption === 'emergency') {
+    const now = new Date();
+    const localISO = now.toISOString().slice(0, 16); // "YYYY-MM-DDTHH:mm"
+    setFormData(prev => ({ ...prev, date_time: localISO }));
+    getCurrentLocation(); // trigger GPS
+  }
+}, [selectedOption]);
+
 
   const handleClear = () => {
     formRef.current?.reset();
@@ -176,24 +175,29 @@ export default function RequestAid() {
     setIsLocationAutoDetected(false);
   };
 
-  // Emergency Aid submission
-  const handleEmergencySubmit = async (e: React.FormEvent) => {
+const handleEmergencySubmit = async (e: React.FormEvent) => {
   e.preventDefault();
 
+  // Validate phone number
   const phoneError = validatePhoneNumber(formData.contact_no);
   if (phoneError) {
     setErrors({ ...errors, contact_no: phoneError });
     return;
   }
 
-  // Fallback for coordinates if not auto-detected
+  // Get current local datetime in "YYYY-MM-DDTHH:mm:ss" format
+  const now = new Date();
+  const offset = now.getTimezoneOffset(); // in minutes
+  const localDateTime = new Date(now.getTime() - offset * 60 * 1000)
+    .toISOString()
+    .slice(0, 19); // remove milliseconds and Z
+
+  // Use coordinates from form, or fallback to DS/District coordinates
   let lat = formData.latitude;
   let lng = formData.longitude;
-
   if (!lat || !lng) {
     const dsCoords = getDivisionalSecretariatCoordinates(selectedDivisionalSecretariat);
     const districtCoords = getDistrictCoordinates(selectedDistrict);
-
     if (dsCoords) {
       lat = dsCoords.lat;
       lng = dsCoords.lng;
@@ -206,13 +210,15 @@ export default function RequestAid() {
     }
   }
 
+  // Prepare payload
   const emergencyPayload = {
     full_name: formData.full_name,
+    nic_number: formData.nic_number,
     contact_no: formData.contact_no,
     district: selectedDistrict,
     divisional_secretariat: selectedDivisionalSecretariat,
-    family_size: 1,
-    date_time: new Date().toISOString(),
+    family_size: formData.family_size,
+    date_time: localDateTime,  // <-- now local time
     description: "Emergency aid request - GPS location detected",
     type_support: "Emergency Aid",
     request_type: "Emergency",
@@ -223,9 +229,7 @@ export default function RequestAid() {
   try {
     const res = await fetch("http://localhost:5158/AidRequest/create", {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json"
-      },
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify(emergencyPayload)
     });
 
@@ -235,6 +239,7 @@ export default function RequestAid() {
     }
 
     setShowSuccess(true);
+    // Reset form
     setFormData({
       full_name: "",
       nic_number: "",
@@ -258,7 +263,7 @@ export default function RequestAid() {
 };
 
 
- const handleSubmit = async (e: React.FormEvent) => {
+const handleSubmit = async (e: React.FormEvent) => {
   e.preventDefault();
 
   const phoneError = validatePhoneNumber(formData.contact_no);
@@ -267,14 +272,15 @@ export default function RequestAid() {
     return;
   }
 
-  // Get coordinates fallback
+  // Use local datetime exactly as entered
+  const localDateTime = formData.date_time; // e.g. "2025-08-29T12:30"
+
+  // Coordinates fallback
   let lat = formData.latitude;
   let lng = formData.longitude;
-
   if (!lat || !lng) {
     const dsCoords = getDivisionalSecretariatCoordinates(selectedDivisionalSecretariat);
     const districtCoords = getDistrictCoordinates(selectedDistrict);
-
     if (dsCoords) {
       lat = dsCoords.lat;
       lng = dsCoords.lng;
@@ -295,28 +301,19 @@ export default function RequestAid() {
     request_type: "postDisaster",
     latitude: lat,
     longitude: lng,
+    date_time: localDateTime,  // <-- send as-is
   };
 
   try {
     const res = await fetch("http://localhost:5158/AidRequest/create", {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify(requestPayload),
     });
 
     if (!res.ok) {
       const errorData = await res.json().catch(() => ({ message: "Unknown server error" }));
       throw new Error(errorData.message || `Server error: ${res.status}`);
-    }
-
-    // Handle response based on content type
-    const contentType = res.headers.get("content-type");
-    if (contentType && contentType.includes("application/json")) {
-      await res.json();
-    } else {
-      await res.text(); // fallback in case response is plain text
     }
 
     setShowSuccess(true);
