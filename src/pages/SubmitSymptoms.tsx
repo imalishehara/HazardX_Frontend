@@ -1,5 +1,6 @@
 import React, { useRef, useState } from "react";
 import districtDivisionalSecretariats from "../data/districtDivisionalSecretariats";
+import { getDivisionalSecretariatCoordinates, getDistrictCoordinates, districtCoordinates, divisionalSecretariatCoordinates } from "../data/coordinates";
 
 export default function SubmitSymptoms() {
   const formRef = useRef<HTMLFormElement>(null);
@@ -34,44 +35,55 @@ export default function SubmitSymptoms() {
     return !regex.test(phone) ? "Phone number must be exactly 10 digits" : "";
   };
 
+  // Find closest district and DS using coordinates.ts data
+
   const getLocationFromCoordinates = (latitude: number, longitude: number) => {
-    const locationMappings = [
-      { bounds: { minLat: 6.7, maxLat: 7.0, minLng: 79.8, maxLng: 80.2 }, district: "Colombo", divisionalSecretariat: "Colombo" },
-      { bounds: { minLat: 6.9, maxLat: 7.2, minLng: 79.9, maxLng: 80.3 }, district: "Gampaha", divisionalSecretariat: "Gampaha" },
-      { bounds: { minLat: 6.5, maxLat: 6.8, minLng: 79.8, maxLng: 80.2 }, district: "Kalutara", divisionalSecretariat: "Kalutara" },
-      { bounds: { minLat: 7.2, maxLat: 7.4, minLng: 80.5, maxLng: 80.8 }, district: "Kandy", divisionalSecretariat: "Kandy" },
-      { bounds: { minLat: 7.4, maxLat: 7.6, minLng: 80.5, maxLng: 80.8 }, district: "Matale", divisionalSecretariat: "Matale" },
-      { bounds: { minLat: 6.9, maxLat: 7.1, minLng: 80.7, maxLng: 81.0 }, district: "Nuwara Eliya", divisionalSecretariat: "Nuwara Eliya" },
-      { bounds: { minLat: 6.0, maxLat: 6.3, minLng: 80.1, maxLng: 80.4 }, district: "Galle", divisionalSecretariat: "Galle" },
-      { bounds: { minLat: 5.9, maxLat: 6.2, minLng: 80.5, maxLng: 80.8 }, district: "Matara", divisionalSecretariat: "Matara" },
-      { bounds: { minLat: 6.1, maxLat: 6.4, minLng: 81.0, maxLng: 81.3 }, district: "Hambantota", divisionalSecretariat: "Hambantota" },
-      { bounds: { minLat: 9.5, maxLat: 9.8, minLng: 80.0, maxLng: 80.3 }, district: "Jaffna", divisionalSecretariat: "Jaffna" },
-      { bounds: { minLat: 9.3, maxLat: 9.6, minLng: 80.3, maxLng: 80.6 }, district: "Kilinochchi", divisionalSecretariat: "Kilinochchi" },
-      { bounds: { minLat: 8.9, maxLat: 9.2, minLng: 79.9, maxLng: 80.2 }, district: "Mannar", divisionalSecretariat: "Mannar" },
-      { bounds: { minLat: 8.7, maxLat: 9.0, minLng: 80.4, maxLng: 80.7 }, district: "Vavuniya", divisionalSecretariat: "Vavuniya" },
-      { bounds: { minLat: 9.0, maxLat: 9.3, minLng: 80.7, maxLng: 81.0 }, district: "Mullaitivu", divisionalSecretariat: "Mullaitivu" },
-      { bounds: { minLat: 7.7, maxLat: 8.0, minLng: 81.6, maxLng: 81.9 }, district: "Batticaloa", divisionalSecretariat: "Batticaloa" },
-      { bounds: { minLat: 7.2, maxLat: 7.5, minLng: 81.6, maxLng: 81.9 }, district: "Ampara", divisionalSecretariat: "Ampara" },
-      { bounds: { minLat: 8.5, maxLat: 8.8, minLng: 81.1, maxLng: 81.4 }, district: "Trincomalee", divisionalSecretariat: "Trincomalee" },
-      { bounds: { minLat: 7.4, maxLat: 7.7, minLng: 80.3, maxLng: 80.6 }, district: "Kurunegala", divisionalSecretariat: "Kurunegala" },
-      { bounds: { minLat: 8.0, maxLat: 8.3, minLng: 79.8, maxLng: 80.1 }, district: "Puttalam", divisionalSecretariat: "Puttalam" },
-      { bounds: { minLat: 8.3, maxLat: 8.6, minLng: 80.3, maxLng: 80.6 }, district: "Anuradhapura", divisionalSecretariat: "Anuradhapura East" },
-      { bounds: { minLat: 7.9, maxLat: 8.2, minLng: 80.9, maxLng: 81.2 }, district: "Polonnaruwa", divisionalSecretariat: "Polonnaruwa" },
-      { bounds: { minLat: 6.9, maxLat: 7.2, minLng: 81.0, maxLng: 81.3 }, district: "Badulla", divisionalSecretariat: "Badulla" },
-      { bounds: { minLat: 6.8, maxLat: 7.1, minLng: 81.3, maxLng: 81.6 }, district: "Monaragala", divisionalSecretariat: "Monaragala" },
-      { bounds: { minLat: 6.6, maxLat: 6.9, minLng: 80.3, maxLng: 80.6 }, district: "Ratnapura", divisionalSecretariat: "Ratnapura" },
-      { bounds: { minLat: 7.2, maxLat: 7.5, minLng: 80.3, maxLng: 80.6 }, district: "Kegalle", divisionalSecretariat: "Kegalle" }
-    ];
-    for (const mapping of locationMappings) {
-      const { bounds, district, divisionalSecretariat } = mapping;
-      if (
-        latitude >= bounds.minLat && latitude <= bounds.maxLat &&
-        longitude >= bounds.minLng && longitude <= bounds.maxLng
-      ) {
-        return { district, divisionalSecretariat };
+    // Helper to calculate distance between two lat/lng points
+    function getDistance(lat1: number, lng1: number, lat2: number, lng2: number) {
+      return Math.sqrt(Math.pow(lat1 - lat2, 2) + Math.pow(lng1 - lng2, 2));
+    }
+
+    // Find closest DS
+    let closestDS: string | undefined = undefined;
+    let minDSDist = Infinity;
+    let closestDistrict: string | undefined = undefined;
+    let minDistrictDist = Infinity;
+
+    // Find closest DS
+    for (const [dsName, coords] of Object.entries(divisionalSecretariatCoordinates)) {
+      const dist = getDistance(latitude, longitude, coords.lat, coords.lng);
+      if (dist < minDSDist) {
+        minDSDist = dist;
+        closestDS = dsName;
       }
     }
-    return { district: "Colombo", divisionalSecretariat: "Colombo" };
+
+    // Find closest district
+    for (const [districtName, coords] of Object.entries(districtCoordinates)) {
+      const dist = getDistance(latitude, longitude, coords.lat, coords.lng);
+      if (dist < minDistrictDist) {
+        minDistrictDist = dist;
+        closestDistrict = districtName;
+      }
+    }
+
+    // If closest DS is in the closest district, use both
+    // Otherwise, fallback to closest DS and its district if possible
+    // Try to match DS to districtDivisionalSecretariats
+    let finalDistrict = closestDistrict;
+    if (closestDS && closestDistrict && districtDivisionalSecretariats[closestDistrict]?.includes(closestDS)) {
+      finalDistrict = closestDistrict;
+    } else if (closestDS) {
+      // Find which district contains the DS
+      for (const [districtName, dsList] of Object.entries(districtDivisionalSecretariats)) {
+        if (dsList.includes(closestDS)) {
+          finalDistrict = districtName;
+          break;
+        }
+      }
+    }
+
+    return { district: finalDistrict || "Colombo", divisionalSecretariat: closestDS || "Colombo" };
   };
 
   const getCurrentLocation = () => {
@@ -161,38 +173,60 @@ export default function SubmitSymptoms() {
     setIsLocationAutoDetected(false);
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!validateForm()) return;
+ 
+const handleSubmit = async (e: React.FormEvent) => {
+  e.preventDefault();
+  if (!validateForm()) return;
 
-    const reportData = {
-      reporter_name,
-      nic_number,
-      contact_no,
-      district,
-      divisional_secretariat,
-      date_time: new Date(date_time).toISOString(),
-      description,
-      image, // ✅ base64 image
-      action: "Pending",
-      latitude,
-      longitude
-    };
+  let lat = latitude;
+  let lng = longitude;
 
-    try {
-      const response = await fetch("http://localhost:5158/Symptoms/create", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(reportData)
-      });
-      if (!response.ok) throw new Error(await response.text());
-      setShowSuccess(true);
-      handleClear();
-    } catch (error) {
-      console.error(error);
-      alert("Failed to submit. Try again.");
+  // If user did NOT click GPS → fallback to manual coordinates
+  if (!lat || !lng) {
+    const dsCoords = getDivisionalSecretariatCoordinates(divisional_secretariat);
+    const districtCoords = getDistrictCoordinates(district);
+
+    if (dsCoords) {
+      lat = dsCoords.lat;
+      lng = dsCoords.lng;
+    } else if (districtCoords) {
+      lat = districtCoords.lat;
+      lng = districtCoords.lng;
+    } else {
+      alert("Could not find coordinates for the selected district/DS.");
+      return;
     }
+  }
+
+  const reportData = {
+    reporter_name,
+    nic_number,
+    contact_no,
+    district,
+    divisional_secretariat,
+    date_time: date_time,
+    description,
+    image, // ✅ base64 image
+    action: "Pending",
+    latitude: lat,
+    longitude: lng
   };
+
+  try {
+    const response = await fetch("http://localhost:5158/Symptoms/create", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(reportData)
+    });
+    if (!response.ok) throw new Error(await response.text());
+    setShowSuccess(true);
+    handleClear();
+  } catch (error) {
+    console.error(error);
+    alert("Failed to submit. Try again.");
+  }
+};
+
 
   const districts = Object.keys(districtDivisionalSecretariats);
   const divisionalSecretariats = district ? districtDivisionalSecretariats[district] : [];
