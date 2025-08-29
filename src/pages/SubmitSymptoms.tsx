@@ -1,6 +1,11 @@
 import React, { useRef, useState } from "react";
 import districtDivisionalSecretariats from "../data/districtDivisionalSecretariats";
-import { getDivisionalSecretariatCoordinates, getDistrictCoordinates, districtCoordinates, divisionalSecretariatCoordinates } from "../data/coordinates";
+import { 
+  getDivisionalSecretariatCoordinates, 
+  getDistrictCoordinates, 
+  districtCoordinates, 
+  divisionalSecretariatCoordinates 
+} from "../data/coordinates";
 
 export default function SubmitSymptoms() {
   const formRef = useRef<HTMLFormElement>(null);
@@ -36,20 +41,16 @@ export default function SubmitSymptoms() {
   };
 
   // Find closest district and DS using coordinates.ts data
-
   const getLocationFromCoordinates = (latitude: number, longitude: number) => {
-    // Helper to calculate distance between two lat/lng points
     function getDistance(lat1: number, lng1: number, lat2: number, lng2: number) {
       return Math.sqrt(Math.pow(lat1 - lat2, 2) + Math.pow(lng1 - lng2, 2));
     }
 
-    // Find closest DS
     let closestDS: string | undefined = undefined;
     let minDSDist = Infinity;
     let closestDistrict: string | undefined = undefined;
     let minDistrictDist = Infinity;
 
-    // Find closest DS
     for (const [dsName, coords] of Object.entries(divisionalSecretariatCoordinates)) {
       const dist = getDistance(latitude, longitude, coords.lat, coords.lng);
       if (dist < minDSDist) {
@@ -58,7 +59,6 @@ export default function SubmitSymptoms() {
       }
     }
 
-    // Find closest district
     for (const [districtName, coords] of Object.entries(districtCoordinates)) {
       const dist = getDistance(latitude, longitude, coords.lat, coords.lng);
       if (dist < minDistrictDist) {
@@ -67,14 +67,10 @@ export default function SubmitSymptoms() {
       }
     }
 
-    // If closest DS is in the closest district, use both
-    // Otherwise, fallback to closest DS and its district if possible
-    // Try to match DS to districtDivisionalSecretariats
     let finalDistrict = closestDistrict;
     if (closestDS && closestDistrict && districtDivisionalSecretariats[closestDistrict]?.includes(closestDS)) {
       finalDistrict = closestDistrict;
     } else if (closestDS) {
-      // Find which district contains the DS
       for (const [districtName, dsList] of Object.entries(districtDivisionalSecretariats)) {
         if (dsList.includes(closestDS)) {
           finalDistrict = districtName;
@@ -173,60 +169,57 @@ export default function SubmitSymptoms() {
     setIsLocationAutoDetected(false);
   };
 
- 
-const handleSubmit = async (e: React.FormEvent) => {
-  e.preventDefault();
-  if (!validateForm()) return;
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!validateForm()) return;
 
-  let lat = latitude;
-  let lng = longitude;
+    let lat = latitude;
+    let lng = longitude;
 
-  // If user did NOT click GPS → fallback to manual coordinates
-  if (!lat || !lng) {
-    const dsCoords = getDivisionalSecretariatCoordinates(divisional_secretariat);
-    const districtCoords = getDistrictCoordinates(district);
+    if (!lat || !lng) {
+      const dsCoords = getDivisionalSecretariatCoordinates(divisional_secretariat);
+      const districtCoords = getDistrictCoordinates(district);
 
-    if (dsCoords) {
-      lat = dsCoords.lat;
-      lng = dsCoords.lng;
-    } else if (districtCoords) {
-      lat = districtCoords.lat;
-      lng = districtCoords.lng;
-    } else {
-      alert("Could not find coordinates for the selected district/DS.");
-      return;
+      if (dsCoords) {
+        lat = dsCoords.lat;
+        lng = dsCoords.lng;
+      } else if (districtCoords) {
+        lat = districtCoords.lat;
+        lng = districtCoords.lng;
+      } else {
+        alert("Could not find coordinates for the selected district/DS.");
+        return;
+      }
     }
-  }
 
-  const reportData = {
-    reporter_name,
-    nic_number,
-    contact_no,
-    district,
-    divisional_secretariat,
-    date_time: date_time,
-    description,
-    image, // ✅ base64 image
-    action: "Pending",
-    latitude: lat,
-    longitude: lng
+    const reportData = {
+      reporter_name,
+      nic_number,
+      contact_no,
+      district,
+      divisional_secretariat,
+      date_time: date_time,
+      description,
+      image, // ✅ base64 image
+      action: "Pending",
+      latitude: lat,
+      longitude: lng
+    };
+
+    try {
+      const response = await fetch("http://localhost:5158/Symptoms/create", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(reportData)
+      });
+      if (!response.ok) throw new Error(await response.text());
+      setShowSuccess(true);
+      handleClear();
+    } catch (error) {
+      console.error(error);
+      alert("Failed to submit. Try again.");
+    }
   };
-
-  try {
-    const response = await fetch("http://localhost:5158/Symptoms/create", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(reportData)
-    });
-    if (!response.ok) throw new Error(await response.text());
-    setShowSuccess(true);
-    handleClear();
-  } catch (error) {
-    console.error(error);
-    alert("Failed to submit. Try again.");
-  }
-};
-
 
   const districts = Object.keys(districtDivisionalSecretariats);
   const divisionalSecretariats = district ? districtDivisionalSecretariats[district] : [];
@@ -479,13 +472,14 @@ const handleSubmit = async (e: React.FormEvent) => {
 
             <div className="border-t border-gray-200" />
 
-            {/* Upload Image */}
+             {/* Upload Image (with camera capture) */}
             <div className="flex flex-col gap-1 md:flex-row md:items-center">
-              <label className="block font-semibold text-base md:text-lg mb-1 md:w-44">Upload Image</label>
+              <label className="block font-semibold text-base md:text-lg mb-1 md:w-44">Upload / Capture Image</label>
               <div className="w-full flex flex-col md:flex-row md:items-center md:ml-2">
                 <input
                   type="file"
                   accept="image/*"
+                  capture="environment"   // ✅ opens camera directly on mobile
                   className="hidden"
                   ref={fileInputRef}
                   onChange={handleFileChange}
@@ -498,7 +492,7 @@ const handleSubmit = async (e: React.FormEvent) => {
                     <svg className="w-7 h-7 mr-2" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2M7 10l5-5m0 0l5 5m-5-5v12" />
                     </svg>
-                    <span>Upload Image</span>
+                    <span>Take Photo</span>
                   </div>
                 </label>
                 {fileName && (
@@ -540,4 +534,5 @@ const handleSubmit = async (e: React.FormEvent) => {
         )}
       </div>
     </div>
-  );}
+  );
+}
